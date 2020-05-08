@@ -3085,6 +3085,12 @@ def p_cdef_statement(s, ctx):
             if s.systring != 'enum':
                 error(pos, "C struct/union cannot be declared cpdef")
         return p_struct_enum(s, pos, ctx)
+    elif s.sy == 'IDENT' and s.systring == 'enumclass':
+        if ctx.level not in ('module', 'module_pxd'):
+            error(pos, "C struct/union/enum definition not allowed here")
+        if ctx.overridable:
+            error(pos, "C++ enum cannot be declared cpdef")
+        return p_cpp_enum_definition(s, pos, ctx)
     elif s.sy == 'IDENT' and s.systring == 'fused':
         return p_fused_definition(s, pos, ctx)
     else:
@@ -3147,6 +3153,7 @@ def p_c_enum_definition(s, pos, ctx):
         create_wrapper = ctx.overridable,
         api = ctx.api, in_pxd = ctx.level == 'module_pxd')
 
+
 def p_c_enum_line(s, ctx, items):
     if s.sy != 'pass':
         p_c_enum_item(s, ctx, items)
@@ -3171,6 +3178,63 @@ def p_c_enum_item(s, ctx, items):
         value = p_test(s)
     items.append(Nodes.CEnumDefItemNode(pos,
         name = name, cname = cname, value = value))
+
+def p_cpp_enum_definition(s, pos, ctx):
+    s.next()
+    if s.sy == 'IDENT':
+        name = s.systring
+        s.next()
+        cname = p_opt_cname(s)
+        if cname is None and ctx.namespace is not None:
+            cname = ctx.namespace + "::" + name
+    else:
+        name = None
+        cname = None
+    items = None
+    s.expect(":")
+    items = []
+
+    enum_ctx = Ctx(level='enumclass')
+    if ctx.namespace is not None and name is not None:
+        enum_ctx.namespace = ctx.namespace + "::" + name
+    else:
+        enum_ctx.namespace = None
+
+    if s.sy != "NEWLINE":
+        error(pos, "Syntax error in C++ enum definition")
+    else:
+        s.next()
+        s.expect_indent()
+        while s.sy not in ('DEDENT', 'EOF'):
+            p_cpp_enum_line(s, enum_ctx, items)
+        s.expect_dedent()
+    return Nodes.CppEnumDefNode(
+        pos, name=name, cname=cname, items=items, typedef_flag=ctx.typedef_flag,
+        visibility = ctx.visibility,
+        create_wrapper = ctx.overridable,
+        api = ctx.api, in_pxd = ctx.level == 'module_pxd'
+    )
+
+def p_cpp_enum_line(s, ctx, items):
+    if s.sy != 'pass':
+        p_cpp_enum_item(s, ctx, items)
+    else:
+        s.next()
+    s.expect_newline("Syntax error in enum item list")
+
+def p_cpp_enum_item(s, ctx, items):
+    pos = s.position()
+    name = p_ident(s)
+    cname = p_opt_cname(s)
+    if cname is None and ctx.namespace is not None:
+        cname = ctx.namespace + "::" + name
+    value = None
+    if s.sy == '=':
+        s.next()
+        value = p_test(s)
+    items.append(Nodes.CppEnumDefItemNode(
+        pos, name=name, cname=cname, value=value
+    ))
 
 def p_c_struct_or_union_definition(s, pos, ctx):
     packed = False

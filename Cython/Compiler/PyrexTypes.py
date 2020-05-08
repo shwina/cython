@@ -182,6 +182,7 @@ class PyrexType(BaseType):
     #  is_struct_or_union    boolean     Is a C struct or union type
     #  is_struct             boolean     Is a C struct type
     #  is_enum               boolean     Is a C enum type
+    #  is_scoped_enum        boolean     Is a C++ scoped enum type
     #  is_typedef            boolean     Is a typedef type
     #  is_string             boolean     Is a C char * type
     #  is_pyunicode_ptr      boolean     Is a C PyUNICODE * type
@@ -245,6 +246,7 @@ class PyrexType(BaseType):
     is_cpp_string = 0
     is_struct = 0
     is_enum = 0
+    is_scoped_enum = 0
     is_typedef = 0
     is_string = 0
     is_pyunicode_ptr = 0
@@ -3876,7 +3878,36 @@ class CppClassType(CType):
         if constructor is not None and best_match([], constructor.all_alternatives()) is None:
             error(pos, "C++ class must have a nullary constructor to be %s" % msg)
 
+class CppEnumType(CType):
+    # name    string
+    # cname   string
 
+    is_scoped_enum = 1
+    
+    def __init__(self, name, namespace=None):
+        self.name = name
+        self.cname = cname
+        self.values = []
+        self.namespace = namespace
+
+    def __str__(self):
+        return self.name
+
+    def declaration_code(self, entity_code,
+                        for_display=0, dll_linkage=None, pyrex=0):
+        if pyrex or for_display:
+            base_code = self.name
+        else:
+            if self.namespace:
+                base_code = "%s::%s" % (
+                    self.namespace.empty_declaration_code(),
+                    self.cname
+                )
+            else:
+                base_code = "enum class %s" % self.cname
+            base_code = public_decl(base_code, dll_linkage)
+        return self.base_declaration_code(base_code, entity_code)
+        
 class TemplatePlaceholderType(CType):
 
     def __init__(self, name, optional=False):

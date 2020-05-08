@@ -1065,10 +1065,10 @@ class CSimpleBaseTypeNode(CBaseTypeNode):
                 else:
                     if self.templates:
                         if not self.name in self.templates:
-                            error(self.pos, "'%s' is not a type identifier" % self.name)
+                            error(self.pos, "'%s' is not a type identifier 1" % self.name)
                         type = PyrexTypes.TemplatePlaceholderType(self.name)
                     else:
-                        error(self.pos, "'%s' is not a type identifier" % self.name)
+                        error(self.pos, "'%s' is not a type identifier 2" % self.name)
         if self.complex:
             if not type.is_numeric or type.is_complex:
                 error(self.pos, "can only complexify c numeric types")
@@ -1137,7 +1137,7 @@ class CNestedBaseTypeNode(CBaseTypeNode):
             return PyrexTypes.error_type
         type_entry = base_type.scope.lookup_here(self.name)
         if not type_entry or not type_entry.is_type:
-            error(self.pos, "'%s.%s' is not a type identifier" % (base_type, self.name))
+            error(self.pos, "'%s.%s' is not a type identifier 3" % (base_type, self.name))
             return PyrexTypes.error_type
         return type_entry.type
 
@@ -1617,6 +1617,9 @@ class CEnumDefItemNode(StatNode):
         if enum_entry.name:
             enum_entry.type.values.append(entry.name)
 
+CppEnumDefNode = CEnumDefNode
+
+CppEnumDefItemNode = CEnumDefItemNode
 
 class CTypeDefNode(StatNode):
     #  base_type    CBaseTypeNode
