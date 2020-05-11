@@ -3198,7 +3198,7 @@ def p_cpp_enum_definition(s, pos, ctx):
     if ctx.namespace is not None and name is not None:
         enum_ctx.namespace = ctx.namespace + "::" + name
     else:
-        enum_ctx.namespace = None
+        enum_ctx.namespace = name
 
     if s.sy != "NEWLINE":
         error(pos, "Syntax error in C++ enum definition")
