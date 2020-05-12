@@ -700,10 +700,7 @@ class Scope(object):
     def declare_cpp_enum(self, name, pos, cname):
         if name:
             if not cname:
-                if (self.in_cinclude):
-                    cname = name
-                else:
-                    cname = self.mangle(Naming.type_prefix, name)
+                cname = name
         if self.is_cpp_class_scope:
             namespace = self.outer_scope.lookup(self.name).type
         else:

@@ -3199,9 +3199,16 @@ def p_cpp_enum_definition(s, pos, ctx):
     else:
         s.next()
         s.expect_indent()
+
+        if ctx.namespace:
+            enum_ctx_namespace = ctx.namespace + "::" + name
+        else:
+            enum_ctx_namespace = name
+        enum_ctx = Ctx(namespace=enum_ctx_namespace)
         while s.sy not in ('DEDENT', 'EOF'):
-            p_cpp_enum_line(s, ctx, items)
+            p_cpp_enum_line(s, enum_ctx, items)
         s.expect_dedent()
+
     return Nodes.CppEnumDefNode(
         pos, name=name, cname=cname, items=items, typedef_flag=ctx.typedef_flag,
         visibility = ctx.visibility,
