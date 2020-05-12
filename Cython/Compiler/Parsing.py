@@ -3194,19 +3194,13 @@ def p_cpp_enum_definition(s, pos, ctx):
     s.expect(":")
     items = []
 
-    enum_ctx = Ctx(level='enumclass')
-    if ctx.namespace is not None and name is not None:
-        enum_ctx.namespace = ctx.namespace + "::" + name
-    else:
-        enum_ctx.namespace = name
-
     if s.sy != "NEWLINE":
         error(pos, "Syntax error in C++ enum definition")
     else:
         s.next()
         s.expect_indent()
         while s.sy not in ('DEDENT', 'EOF'):
-            p_cpp_enum_line(s, enum_ctx, items)
+            p_cpp_enum_line(s, ctx, items)
         s.expect_dedent()
     return Nodes.CppEnumDefNode(
         pos, name=name, cname=cname, items=items, typedef_flag=ctx.typedef_flag,

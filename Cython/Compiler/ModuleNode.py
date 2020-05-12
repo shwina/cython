@@ -831,6 +831,8 @@ class ModuleNode(Nodes.Node, Nodes.BlockNode):
                     self.generate_typedef(entry, code)
                 elif type.is_enum:
                     self.generate_enum_definition(entry, code)
+                elif type.is_scoped_enum:
+                    self.generate_scoped_enum_definition(entry, code)
                 elif type.is_struct_or_union:
                     self.generate_struct_union_definition(entry, code)
                 elif type.is_ctuple and entry.used:
@@ -1055,6 +1057,33 @@ class ModuleNode(Nodes.Node, Nodes.BlockNode):
             # Not pre-declared.
             code.putln("typedef enum %s %s;" % (name, name))
 
+    def generate_scoped_enum_definition(self, entry, code):
+        code.mark_pos(entry.pos)
+        type = entry.type
+        name = entry.cname or entry.name or ""
+        header, footer = self.sue_header_footer(type, "enum class", name)
+        code.putln(header)
+        enum_values = entry.enum_values
+        if not enum_values:
+            error(entry.pos, "Empty enum definition not allowed outside a 'cdef extern from' block")
+        else:
+            last_entry = enum_values[-1]
+            # this does not really generate code, just builds the result value
+            for value_entry in enum_values:
+                if value_entry.value_node is not None:
+                    value_entry.value_node.generate_evaluation_code(code)
+
+            for value_entry in enum_values:
+                if value_entry.value_node is None:
+                    value_code = value_entry.cname
+                else:
+                    value_code = ("%s = %s" % (
+                        value_entry.cname,
+                        value_entry.value_node.result()))
+                if value_entry is not last_entry:
+                    value_code += ","
+                code.putln(value_code)
+        code.putln(footer)
     def generate_typeobj_predeclaration(self, entry, code):
         code.putln("")
         name = entry.type.typeobj_cname

@@ -22,7 +22,7 @@ from . import PyrexTypes
 from . import TypeSlots
 from .PyrexTypes import py_object_type, error_type
 from .Symtab import (ModuleScope, LocalScope, ClosureScope,
-                     StructOrUnionScope, PyClassScope, CppClassScope, TemplateScope,
+                     StructOrUnionScope, PyClassScope, CppClassScope, TemplateScope, CppEnumScope,
                      punycodify_name)
 from .Code import UtilityCode
 from .StringEncoding import EncodedString
@@ -1548,7 +1548,7 @@ class CppClassNode(CStructOrUnionDefNode, BlockNode):
 
 class CEnumDefNode(StatNode):
     #  name           string or None
-    #  cname          string or None
+    #  cname          string or Nonen
     #  items          [CEnumDefItemNode]
     #  typedef_flag   boolean
     #  visibility     "public" or "private" or "extern"
@@ -1560,7 +1560,7 @@ class CEnumDefNode(StatNode):
     child_attrs = ["items"]
 
     def declare(self, env):
-         self.entry = env.declare_enum(
+        self.entry = env.declare_enum(
              self.name, self.pos,
              cname=self.cname, typedef_flag=self.typedef_flag,
              visibility=self.visibility, api=self.api,
@@ -1617,9 +1617,71 @@ class CEnumDefItemNode(StatNode):
         if enum_entry.name:
             enum_entry.type.values.append(entry.name)
 
-CppEnumDefNode = CEnumDefNode
 
-CppEnumDefItemNode = CEnumDefItemNode
+class CppEnumDefNode(StatNode):
+    #  name           string or None
+    #  cname          string or None
+    #  items          [CEnumDefItemNode]
+    #  typedef_flag   boolean
+    #  visibility     "public" or "private" or "extern"
+    #  api            boolean
+    #  in_pxd         boolean
+    #  create_wrapper boolean
+    #  entry          Entry
+
+    child_attrs = ["items"]
+
+    def declare(self, env):
+        self.entry = env.declare_cpp_enum(
+            self.name, self.pos,
+            cname=self.cname
+        )
+
+    def analyse_declarations(self, env):
+        scope = None
+        if self.items is not None:
+            scope = CppEnumScope(self.name, env)
+        self.entry = env.declare_cpp_enum(
+            self.name, self.pos,
+            cname=self.cname
+        )
+        if self.entry is None:
+            return
+        if scope is not None:
+            scope.type = self.entry.type
+        if self.items is not None:
+            if self.in_pxd and not env.in_cinclude:
+                self.entry.defined_in_pxd = 1
+            for item in self.items:
+                item.analyse_declarations(scope, self.entry)
+        self.scope = scope
+
+    def analyse_expressions(self, env):
+        return self
+
+    def generate_execution_code(self, code):
+        pass
+    
+
+class CppEnumDefItemNode(StatNode):
+    #  name     string
+    #  cname    string or None
+    #  value    ExprNode or None
+
+    child_attrs = ["value"]
+
+    def analyse_declarations(self, env, enum_entry):
+        if self.value:
+            self.value = self.value.analyse_const_expression(env)
+        entry = env.declare_const(
+            self.name, enum_entry.type,
+            self.value, self.pos, cname=self.cname,
+            visibility=enum_entry.visibility, api=enum_entry.api,
+            create_wrapper=enum_entry.create_wrapper and enum_entry.name is None)
+        enum_entry.enum_values.append(entry)
+        if enum_entry.name:
+            enum_entry.type.values.append(entry.name)
+    
 
 class CTypeDefNode(StatNode):
     #  base_type    CBaseTypeNode

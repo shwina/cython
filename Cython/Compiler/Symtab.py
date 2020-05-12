@@ -697,6 +697,27 @@ class Scope(object):
         self.sue_entries.append(entry)
         return entry
 
+    def declare_cpp_enum(self, name, pos, cname):
+        if name:
+            if not cname:
+                if (self.in_cinclude):
+                    cname = name
+                else:
+                    cname = self.mangle(Naming.type_prefix, name)
+        if self.is_cpp_class_scope:
+            namespace = self.outer_scope.lookup(self.name).type
+        else:
+            namespace = None
+
+        entry = self.lookup_here(name)
+        if not entry:
+            type = PyrexTypes.CppEnumType(
+                name, cname, namespace
+            )
+            entry = self.declare_type(name, type, pos, cname = cname)
+            entry.enum_values = []
+        return entry
+
     def declare_tuple_type(self, pos, components):
         return self.outer_scope.declare_tuple_type(pos, components)
 
@@ -2549,6 +2570,22 @@ class CppClassScope(Scope):
                                   entry.visibility)
 
         return scope
+
+
+class CppEnumScope(Scope):
+    #  Namespace of a Cpp Enum
+
+    def __init__(self, name, outer_scope):
+        Scope.__init__(self, name, outer_scope, None)
+
+    def declare_var(self, name, type, pos,
+                    cname = None, visibility = 'extern'):
+        # Add an entry for an attribute.
+        if not cname:
+            cname = name
+        entry = self.declare(name, cname, type, pos, visibility)
+        entry.is_variable = 1
+        return entry
 
 
 class PropertyScope(Scope):

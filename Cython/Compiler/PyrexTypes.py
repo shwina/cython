@@ -3884,7 +3884,7 @@ class CppEnumType(CType):
 
     is_scoped_enum = 1
     
-    def __init__(self, name, namespace=None):
+    def __init__(self, name, cname, namespace=None):
         self.name = name
         self.cname = cname
         self.values = []
