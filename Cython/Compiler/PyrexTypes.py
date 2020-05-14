@@ -1525,6 +1525,9 @@ class CType(PyrexType):
 
     def from_py_call_code(self, source_code, result_code, error_pos, code,
                           from_py_function=None, error_condition=None):
+
+        if self.is_enum:
+            breakpoint()
         return self._assign_from_py_code(
             source_code, result_code, error_pos, code, from_py_function, error_condition)
 
@@ -1835,6 +1838,8 @@ class CIntLike(object):
 
     def create_from_py_utility_code(self, env):
         if type(self).from_py_function is None:
+            if self.is_enum:
+                breakpoint()
             self.from_py_function = "__Pyx_PyInt_As_" + self.specialization_name()
             env.use_utility_code(TempitaUtilityCode.load_cached(
                 "CIntFromPy", "TypeConversion.c",
@@ -3907,7 +3912,74 @@ class CppEnumType(CType):
                 base_code = "enum class %s" % self.cname
             base_code = public_decl(base_code, dll_linkage)
         return self.base_declaration_code(base_code, entity_code)
-        
+
+    def create_from_py_utility_code(self, env):
+        if self.from_py_function is not None:
+            return True
+        breakpoint()
+        pass
+        context = {}
+        cname = "__pyx_convert_%s_from_%s" % (
+            self.cname.split("::")[-1],
+            "PyObject"
+        )
+        context.update({
+            "cname": cname,
+            "TYPE": self.cname
+        })
+        from .UtilityCode import CythonUtilityCode
+        env.use_utility_code(CythonUtilityCode.load(
+            "enum.from_py",
+            "CppConvert.pyx",
+            context=context,
+            compiler_directives=env.directives
+        ))
+        self.from_py_function = cname
+        return True
+
+
+    def create_to_py_utility_code(self, env):
+        if self.from_py_function is not None:
+            return True
+        context = {}
+        cname = "__pyx_convert_%s_from_%s" % (
+            "PyObject",
+            self.cname.split("::")[-1]
+        )
+        context.update({
+            "cname": cname,
+            "TYPE": self.cname
+        })
+        from .UtilityCode import CythonUtilityCode
+        env.use_utility_code(CythonUtilityCode.load(
+            "enum.to_py",
+            "CppConvert.pyx",
+            context=context,
+            compiler_directives=env.directives
+        ))
+        self.to_py_function = cname
+        return True
+    
+    def create_type_wrapper(self, env):
+        from .UtilityCode import CythonUtilityCode
+        env.use_utility_code(CythonUtilityCode.load(
+            "CppEnumType", "CpdefEnums.pyx",
+            context={"name": "Py"+self.name,
+                     "cname": self.cname,
+                     "items": tuple(self.values)},
+            outer_module_scope=env.global_scope()))
+
+    
+        # context.update({
+        #     'cname': 
+            
+        # from .UtilityCode import CythonUtilityCode
+        # env.use_utility_code(CythonUtilityCode.load(
+        #     cls.replace('unordered_', '') + ".from_py", "CppConvert.pyx",
+        #     context=context, compiler_directives=env.directives))
+        # self.from_py_function = cname
+
+    
 class TemplatePlaceholderType(CType):
 
     def __init__(self, name, optional=False):

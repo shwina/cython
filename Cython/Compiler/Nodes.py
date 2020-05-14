@@ -1634,7 +1634,8 @@ class CppEnumDefNode(StatNode):
     def declare(self, env):
         self.entry = env.declare_cpp_enum(
             self.name, self.pos,
-            cname=self.cname
+            cname=self.cname,
+            create_wrapper=self.create_wrapper
         )
 
     def analyse_declarations(self, env):
@@ -1643,7 +1644,8 @@ class CppEnumDefNode(StatNode):
             scope = CppEnumScope(self.name, env)
         self.entry = env.declare_cpp_enum(
             self.name, self.pos,
-            cname=self.cname
+            cname=self.cname,
+            create_wrapper=self.create_wrapper
         )
         if self.entry is None:
             return

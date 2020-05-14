@@ -697,7 +697,7 @@ class Scope(object):
         self.sue_entries.append(entry)
         return entry
 
-    def declare_cpp_enum(self, name, pos, cname):
+    def declare_cpp_enum(self, name, pos, cname, create_wrapper = 0):
         if name:
             if not cname:
                 cname = name
@@ -713,6 +713,8 @@ class Scope(object):
             )
             entry = self.declare_type(name, type, pos, cname = cname)
             entry.enum_values = []
+        breakpoint()
+        entry.create_wrapper = create_wrapper
         return entry
 
     def declare_tuple_type(self, pos, components):
