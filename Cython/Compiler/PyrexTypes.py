@@ -1838,8 +1838,6 @@ class CIntLike(object):
 
     def create_from_py_utility_code(self, env):
         if type(self).from_py_function is None:
-            if self.is_enum:
-                breakpoint()
             self.from_py_function = "__Pyx_PyInt_As_" + self.specialization_name()
             env.use_utility_code(TempitaUtilityCode.load_cached(
                 "CIntFromPy", "TypeConversion.c",
@@ -3916,7 +3914,6 @@ class CppEnumType(CType):
     def create_from_py_utility_code(self, env):
         if self.from_py_function is not None:
             return True
-        breakpoint()
         pass
         context = {}
         cname = "__pyx_convert_%s_from_%s" % (

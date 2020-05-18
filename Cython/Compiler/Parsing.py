@@ -3207,7 +3207,6 @@ def p_cpp_enum_definition(s, pos, ctx):
             p_cpp_enum_line(s, enum_ctx, items)
         s.expect_dedent()
 
-    breakpoint()
     return Nodes.CppEnumDefNode(
         pos, name=name, cname=cname, items=items, typedef_flag=ctx.typedef_flag,
         visibility = ctx.visibility,
