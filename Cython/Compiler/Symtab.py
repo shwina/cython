@@ -713,7 +713,6 @@ class Scope(object):
             )
             entry = self.declare_type(name, type, pos, cname = cname)
             entry.enum_values = []
-        breakpoint()
         entry.create_wrapper = create_wrapper
         return entry
 
