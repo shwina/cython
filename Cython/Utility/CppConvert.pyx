@@ -242,10 +242,6 @@ cdef extern from "<type_traits>" namespace "std":
     cdef cppclass underlying_type_t[T]:
         pass
 
-cdef extern from *:
-    cdef enumclass {{TYPE}}:
-        pass
-    
 @cname("{{cname}}")
 cdef {{TYPE}} {{cname}}(object o) except *:
     return <{{TYPE}}><underlying_type_t[{{TYPE}}]><int>(o)
@@ -256,9 +252,6 @@ cdef extern from "<type_traits>" namespace "std":
     cdef cppclass underlying_type_t[T]:
         pass
 
-cdef extern from *:
-    cdef enumclass {{TYPE}}:
-        pass
-
+@cname("{{cname}}")
 cdef object {{cname}}(const {{TYPE}}& x):
     return <int><underlying_type_t[{{TYPE}}]>(x)
