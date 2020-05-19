@@ -1,13 +1,12 @@
 # mode: compile
 # distutils: language=c++
 
-from enum import IntEnum, auto
-
-cdef extern from *:
+cdef extern from * namespace "Blah":
     """
     #include <iostream>
 
-    enum class Spam {
+    namespace Blah {
+    enum class Spam : bool {
         a = true,
         b = false
     };
@@ -18,17 +17,17 @@ cdef extern from *:
         else
             std::cout << "b" << std::endl;
     }
+    }
+
     """
-    cdef enumclass Spam:
+    cpdef enumclass Spam:
         a
         b
 
-    void print_spam(Spam x)
+    void print_spam(Spam)
 
+def py_print_spam(Spam x):
+    print_spam(x)
 
-class MyEnum(IntEnum):
-    a = Spam.a
-    b = Spam.b
-
-print_spam(MyEnum.a)
-print_spam(MyEnum.b)
+py_print_spam(Spam.a)
+py_print_spam(Spam.b)
