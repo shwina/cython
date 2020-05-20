@@ -2097,7 +2097,7 @@ class NameNode(AtomicExprNode):
             py_entry.is_pyglobal = True
             py_entry.scope = self.entry.scope
             self.entry = py_entry
-        if entry.is_type and entry.type.is_scoped_enum:
+        elif entry.is_type and entry.type.is_scoped_enum:
             self.entry = entry
         elif not (entry.is_const or entry.is_variable or
                   entry.is_builtin or entry.is_cfunction or

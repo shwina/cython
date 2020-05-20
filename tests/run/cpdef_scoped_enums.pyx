@@ -1,4 +1,5 @@
 # tag: cpp
+# distutils: language=c++
 
 """
 >>> Cheese.cheddar == 1, Cheese.camembert == 2
@@ -20,4 +21,4 @@ def test_as_variable_from_cython():
     """
     >>> test_as_variable_from_cython()
     """
-    list(Cheese)
+    assert list(Cheese) == [1, 2]
