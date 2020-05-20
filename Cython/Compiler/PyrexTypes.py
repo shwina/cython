@@ -3904,7 +3904,7 @@ class CppEnumType(CType):
                     self.cname
                 )
             else:
-                base_code = "enum class %s" % self.cname
+                base_code = "enum %s" % self.cname
             base_code = public_decl(base_code, dll_linkage)
         return self.base_declaration_code(base_code, entity_code)
 
