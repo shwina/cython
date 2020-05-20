@@ -3913,12 +3913,12 @@ class CppEnumType(CType):
             return True
         context = {}
         cname = "__pyx_convert_%s_from_%s" % (
-            self.cname.split("::")[-1],
+            type_identifier(self),
             "PyObject"
         )
         context.update({
             "cname": cname,
-            "TYPE": self.cname.split("::")[-1]
+            "TYPE": self.name
         })
         from .UtilityCode import CythonUtilityCode
         env.use_utility_code(CythonUtilityCode.load(
@@ -3937,11 +3937,11 @@ class CppEnumType(CType):
         context = {}
         cname = "__pyx_convert_%s_from_%s" % (
             "PyObject",
-            self.cname.split("::")[-1]
+            type_identifier(self)
         )
         context.update({
             "cname": cname,
-            "TYPE": self.cname.split("::")[-1]
+            "TYPE": self.name
         })
         from .UtilityCode import CythonUtilityCode
         env.use_utility_code(CythonUtilityCode.load(
