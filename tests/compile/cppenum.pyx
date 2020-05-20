@@ -1,6 +1,7 @@
 # mode: compile
 # tag: cpp
 
+
 cpdef enumclass Spam:
     a
     b
