@@ -3918,7 +3918,8 @@ class CppEnumType(CType):
         )
         context.update({
             "cname": cname,
-            "TYPE": self.name
+            "TYPE": self.name,
+            self.name: self
         })
         from .UtilityCode import CythonUtilityCode
         env.use_utility_code(CythonUtilityCode.load(
@@ -3941,7 +3942,8 @@ class CppEnumType(CType):
         )
         context.update({
             "cname": cname,
-            "TYPE": self.name
+            "TYPE": self.name,
+            self.name: self
         })
         from .UtilityCode import CythonUtilityCode
         env.use_utility_code(CythonUtilityCode.load(
