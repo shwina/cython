@@ -1,7 +1,6 @@
 # tag: cpp
 # mode: run
 
-
 cdef extern from *:
     """
     enum class Enum1 {
