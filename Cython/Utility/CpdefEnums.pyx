@@ -61,7 +61,7 @@ else:
     __Pyx_globals['{{item}}'] = {{name}}({{item}}, '{{item}}')
     {{endfor}}
 
-#################### CppEnumType ####################
+#################### ScopedEnumType ####################
 #@requires: EnumBase
 cdef dict __Pyx_globals = globals()
 
@@ -73,4 +73,4 @@ if PY_VERSION_HEX >= 0x03040000:
         {{endfor}}
     ]))
 else:
-    pass
+    __Pyx_globals["{{name}}"] = type({{name}}, (__Pyx_EnumBase,), {})

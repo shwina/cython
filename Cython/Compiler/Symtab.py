@@ -697,7 +697,7 @@ class Scope(object):
         self.sue_entries.append(entry)
         return entry
 
-    def declare_cpp_enum(self, name, pos, cname, create_wrapper = 0):
+    def declare_scoped_enum(self, name, pos, cname, create_wrapper = 0):
         if name:
             if not cname:
                 cname = name
@@ -708,7 +708,7 @@ class Scope(object):
 
         entry = self.lookup_here(name)
         if not entry:
-            type = PyrexTypes.CppEnumType(
+            type = PyrexTypes.ScopedEnumType(
                 name, cname, namespace
             )
             entry = self.declare_type(name, type, pos, cname = cname)
@@ -2570,8 +2570,8 @@ class CppClassScope(Scope):
         return scope
 
 
-class CppEnumScope(Scope):
-    #  Namespace of a Cpp Enum
+class ScopedEnumScope(Scope):
+    #  Namespace of a ScopedEnum
 
     def __init__(self, name, outer_scope):
         Scope.__init__(self, name, outer_scope, None)

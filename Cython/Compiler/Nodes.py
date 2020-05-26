@@ -22,7 +22,7 @@ from . import PyrexTypes
 from . import TypeSlots
 from .PyrexTypes import py_object_type, error_type
 from .Symtab import (ModuleScope, LocalScope, ClosureScope,
-                     StructOrUnionScope, PyClassScope, CppClassScope, TemplateScope, CppEnumScope,
+                     StructOrUnionScope, PyClassScope, CppClassScope, TemplateScope, ScopedEnumScope,
                      punycodify_name)
 from .Code import UtilityCode
 from .StringEncoding import EncodedString
@@ -1618,13 +1618,10 @@ class CEnumDefItemNode(StatNode):
             enum_entry.type.values.append(entry.name)
 
 
-class CppEnumDefNode(StatNode):
+class ScopedEnumDefNode(StatNode):
     #  name           string or None
     #  cname          string or None
-    #  items          [CEnumDefItemNode]
-    #  typedef_flag   boolean
-    #  visibility     "public" or "private" or "extern"
-    #  api            boolean
+    #  items          [ScopedEnumDefItemNode]
     #  in_pxd         boolean
     #  create_wrapper boolean
     #  entry          Entry
@@ -1632,7 +1629,7 @@ class CppEnumDefNode(StatNode):
     child_attrs = ["items"]
 
     def declare(self, env):
-        self.entry = env.declare_cpp_enum(
+        self.entry = env.declare_scoped_enum(
             self.name, self.pos,
             cname=self.cname,
             create_wrapper=self.create_wrapper
@@ -1641,8 +1638,8 @@ class CppEnumDefNode(StatNode):
     def analyse_declarations(self, env):
         scope = None
         if self.items is not None:
-            scope = CppEnumScope(self.name, env)
-        self.entry = env.declare_cpp_enum(
+            scope = ScopedEnumScope(self.name, env)
+        self.entry = env.declare_scoped_enum(
             self.name, self.pos,
             cname=self.cname,
             create_wrapper=self.create_wrapper
@@ -1665,7 +1662,7 @@ class CppEnumDefNode(StatNode):
         pass
     
 
-class CppEnumDefItemNode(StatNode):
+class ScopedEnumDefItemNode(StatNode):
     #  name     string
     #  cname    string or None
     #  value    ExprNode or None

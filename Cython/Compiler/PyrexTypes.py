@@ -3878,7 +3878,7 @@ class CppClassType(CType):
         if constructor is not None and best_match([], constructor.all_alternatives()) is None:
             error(pos, "C++ class must have a nullary constructor to be %s" % msg)
 
-class CppEnumType(CType):
+class ScopedEnumType(CType):
     # name    string
     # cname   string
 
@@ -3959,7 +3959,7 @@ class CppEnumType(CType):
     def create_type_wrapper(self, env):
         from .UtilityCode import CythonUtilityCode
         rst = CythonUtilityCode.load(
-            "CppEnumType", "CpdefEnums.pyx",
+            "ScopedEnumType", "CpdefEnums.pyx",
             context={"name": self.name,
                      "cname": self.cname.split("::")[-1],
                      "items": tuple(self.values)},
