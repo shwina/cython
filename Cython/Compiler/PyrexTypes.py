@@ -194,7 +194,8 @@ class PyrexType(BaseType):
     #  is_pythran_expr       boolean     Is Pythran expr
     #  is_numpy_buffer       boolean     Is Numpy array buffer
     #  has_attributes        boolean     Has C dot-selectable attributes
-    #  needs_refcounting          boolean     Needs code to be generated similar to incref/gotref/decref.
+    #  needs_cpp_construction  boolean     Needs C++ constructor and destructor when used in a cdef class
+    #  needs_refcounting     boolean     Needs code to be generated similar to incref/gotref/decref.
     #                                    Largely used internally.
     #  default_value         string      Initial value that can be assigned before first user assignment.
     #  declaration_value     string      The value statically assigned on declaration (if any).
@@ -263,6 +264,7 @@ class PyrexType(BaseType):
     is_pythran_expr = 0
     is_numpy_buffer = 0
     has_attributes = 0
+    needs_cpp_construction = 0
     needs_refcounting = 0
     default_value = ""
     declaration_value = ""
@@ -2746,16 +2748,33 @@ class CNullPtrType(CPtrType):
     is_null_ptr = 1
 
 
-class CReferenceType(BaseType):
-
-    is_reference = 1
-    is_fake_reference = 0
+class CReferenceBaseType(BaseType):
+    # Common base type for C reference and C++ rvalue reference types.
 
     def __init__(self, base_type):
         self.ref_base_type = base_type
 
     def __repr__(self):
-        return "<CReferenceType %s>" % repr(self.ref_base_type)
+        return "<%s %s>" % repr(self.__class__.__name__, self.ref_base_type)
+
+    def specialize(self, values):
+        base_type = self.ref_base_type.specialize(values)
+        if base_type == self.ref_base_type:
+            return self
+        else:
+            return type(self)(base_type)
+
+    def deduce_template_params(self, actual):
+        return self.ref_base_type.deduce_template_params(actual)
+
+    def __getattr__(self, name):
+        return getattr(self.ref_base_type, name)
+
+
+class CReferenceType(CReferenceBaseType):
+
+    is_reference = 1
+    is_fake_reference = 0
 
     def __str__(self):
         return "%s &" % self.ref_base_type
@@ -2767,26 +2786,10 @@ class CReferenceType(BaseType):
             "&%s" % entity_code,
             for_display, dll_linkage, pyrex)
 
-    def specialize(self, values):
-        base_type = self.ref_base_type.specialize(values)
-        if base_type == self.ref_base_type:
-            return self
-        else:
-            return type(self)(base_type)
-
-    def deduce_template_params(self, actual):
-        return self.ref_base_type.deduce_template_params(actual)
-
-    def __getattr__(self, name):
-        return getattr(self.ref_base_type, name)
-
 
 class CFakeReferenceType(CReferenceType):
 
     is_fake_reference = 1
-
-    def __repr__(self):
-        return "<CFakeReferenceType %s>" % repr(self.ref_base_type)
 
     def __str__(self):
         return "%s [&]" % self.ref_base_type
@@ -2797,39 +2800,20 @@ class CFakeReferenceType(CReferenceType):
         return "__Pyx_FakeReference<%s> %s" % (self.ref_base_type.empty_declaration_code(), entity_code)
 
 
-class CppRvalueReferenceType(BaseType):
-    # TODO: figure out how to reuse code with CReferenceType
+class CppRvalueReferenceType(CReferenceBaseType):
 
+    is_reference = 0
+    is_fake_reference = 0
     is_rvalue_reference = 1
-
-    def __init__(self, base_type):
-        self.ref_base_type = base_type
-
-    def __repr__(self):
-        return "<CppRvalueReferenceType %s>" % repr(self.ref_base_type)
 
     def __str__(self):
         return "%s &&" % self.ref_base_type
 
     def declaration_code(self, entity_code,
             for_display = 0, dll_linkage = None, pyrex = 0):
-        #print "CReferenceType.declaration_code: pointer to", self.base_type ###
         return self.ref_base_type.declaration_code(
             "&&%s" % entity_code,
             for_display, dll_linkage, pyrex)
-
-    def specialize(self, values):
-        base_type = self.ref_base_type.specialize(values)
-        if base_type == self.ref_base_type:
-            return self
-        else:
-            return type(self)(base_type)
-
-    def deduce_template_params(self, actual):
-        return self.ref_base_type.deduce_template_params(actual)
-
-    def __getattr__(self, name):
-        return getattr(self.ref_base_type, name)
 
 
 class CFuncType(CType):
@@ -3464,6 +3448,14 @@ class CFuncTypeArg(BaseType):
     def specialize(self, values):
         return CFuncTypeArg(self.name, self.type.specialize(values), self.pos, self.cname)
 
+    def is_forwarding_reference(self):
+        if self.type.is_rvalue_reference:
+            if (
+                isinstance(self.type.ref_base_type, TemplatePlaceholderType)
+                and not self.type.ref_base_type.is_cv_qualified
+            ):
+                return True
+        return False
 
 class ToPyStructUtilityCode(object):
 
@@ -3531,7 +3523,7 @@ class CStructOrUnionType(CType):
     has_attributes = 1
     exception_check = True
 
-    def __init__(self, name, kind, scope, typedef_flag, cname, packed=False):
+    def __init__(self, name, kind, scope, typedef_flag, cname, packed=False, in_cpp=False):
         self.name = name
         self.cname = cname
         self.kind = kind
@@ -3546,6 +3538,7 @@ class CStructOrUnionType(CType):
         self._convert_to_py_code = None
         self._convert_from_py_code = None
         self.packed = packed
+        self.needs_cpp_construction = self.is_struct and in_cpp
 
     def can_coerce_to_pyobject(self, env):
         if self._convert_to_py_code is False:
@@ -3716,6 +3709,7 @@ class CppClassType(CType):
 
     is_cpp_class = 1
     has_attributes = 1
+    needs_cpp_construction = 1
     exception_check = True
     namespace = None
 

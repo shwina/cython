@@ -5721,20 +5721,6 @@ class SimpleCallNode(CallNode):
 
         return self
 
-    def handle_universal_references(self):
-        func_type = self.function_type()
-        arg_types = [arg.type for arg in self.args]
-        for i, formal_arg in enumerate(func_type.args):
-            if formal_arg.type.is_rvalue_reference:
-                if isinstance(
-                    formal_arg.type.ref_base_type,
-                    PyrexTypes.TemplatePlaceholderType
-                ):
-                    # it's a forwarding reference,
-                    if self.args[i].is_lvalue():
-                        arg_types[i] = PyrexTypes.c_ref_type(arg_types[i])
-        return arg_types
-
     def function_type(self):
         # Return the type of the function being called, coercing a function
         # pointer to a function if necessary. If the function has fused
@@ -5784,8 +5770,23 @@ class SimpleCallNode(CallNode):
             else:
                 alternatives = overloaded_entry.all_alternatives()
 
+            # For any argument/parameter pair A/P, if P is a forwarding reference,
+            # use lvalue-reference-to-A for deduction in place of A when the
+            # function call argument is an lvalue. See:
+            # https://en.cppreference.com/w/cpp/language/template_argument_deduction#Deduction_from_a_function_call
+            arg_types = [arg.type for arg in args]
+            if func_type.is_cfunction:
+                for i, formal_arg in enumerate(func_type.args):
+                    if formal_arg.is_forwarding_reference():
+                        if self.args[i].is_lvalue():
+                            arg_types[i] = PyrexTypes.c_ref_type(arg_types[i])
+
             entry = PyrexTypes.best_match(
-                self.handle_universal_references(), alternatives, self.pos, env, args
+                arg_types,
+                alternatives,
+                self.pos,
+                env,
+                args
             )
 
             if not entry:
@@ -9500,6 +9501,9 @@ class PyCFunctionNode(ExprNode, ModuleNameMixin):
 
         if def_node.local_scope.parent_scope.is_c_class_scope and not def_node.entry.is_anonymous:
             flags.append('__Pyx_CYFUNCTION_CCLASS')
+
+        if def_node.is_coroutine:
+            flags.append('__Pyx_CYFUNCTION_COROUTINE')
 
         if flags:
             flags = ' | '.join(flags)
