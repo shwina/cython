@@ -512,6 +512,9 @@ class ExprNode(Node):
         return self._make_move_result_rhs(self.result())
 
     def move_result_rhs_as(self, type):
+        if type.is_rvalue_reference and self.is_temp:
+            self.has_temp_moved = True
+            return "std::move({0})".format(self.result_as(type))
         allow_move = (type and not type.is_reference and not type.needs_refcounting)
         return self._make_move_result_rhs(self.result_as(type),
                                           allow_move=allow_move)
