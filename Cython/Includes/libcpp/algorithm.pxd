@@ -6,10 +6,15 @@ from libc.stddef import ptrdiff_t
 cdef extern from "<algorithm>" namespace "std" nogil:
     # Non-modifying sequence operations
     bool all_of[Iter, Pred](Iter first, Iter last, Pred pred) except +
+
     bool any_of[Iter, Pred](Iter first, Iter last, Pred pred) except +
+    bool any_of[ExecutionPolicy, Iter, Pred](ExecutionPolicy&& policy, Iter first, Iter last, Pred pred) except +
+
     bool none_of[Iter, Pred](Iter first, Iter last, Pred pred) except +
 
     void for_each[Iter, UnaryFunction](Iter first, Iter last, UnaryFunction f) except +  # actually returns f
+    void for_each[Iter, UnaryFunction](Iter first, Iter last, UnaryFunction f) except +  # actually returns f
+    void for_each[ExecutionPolicy, Iter, UnaryFunction](ExecutionPolicy&& policy, Iter first, Iter last, UnaryFunction f) except +
 
     ptrdiff_t count[Iter, T](Iter first, Iter last, const T& value) except +
     ptrdiff_t count_if[Iter, Pred](Iter first, Iter last, Pred pred) except +
@@ -41,6 +46,8 @@ cdef extern from "<algorithm>" namespace "std" nogil:
 
     # Modifying sequence operations
     OutputIt copy[InputIt, OutputIt](InputIt first, InputIt last, OutputIt d_first) except +
+    OutputIt copy[ExecutionPolicy, InputIt, OutputIt](ExecutionPolicy&& policy, InputIt first, InputIt second, OutputIt first) except +
+
     OutputIt copy_if[InputIt, OutputIt, Pred](InputIt first, InputIt last, OutputIt d_first, Pred pred) except +
     OutputIt copy_n[InputIt, Size, OutputIt](InputIt first, Size count, OutputIt result) except +
     Iter2 copy_backward[Iter1, Iter2](Iter1 first, Iter1 last, Iter2 d_last) except +
